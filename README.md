@@ -13,7 +13,7 @@ using Brief;
   var man = new Manager(cs);
 ```
 
-Let's retrieve a dataset from a stored procedure
+Let's retrieve a DataTable from a stored procedure
 ```csharp
 var dataTable = man.With(new StoredProcedure("stored procedure name")).Get<DataTable>();
 ```
