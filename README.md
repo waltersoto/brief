@@ -91,4 +91,31 @@ Executing a list of commands as a “transaction”:
 
 >Note: The “Transaction()” method will automatically commit or rollback (if an exception occurred)
 
+##Other methods:
+
+```csharp
+ var actions = man.With(new SqlCommand("some command"));
+
+ //ExecuteScalar
+  object obj = actions.Scalar(); 
+
+  //Cast the ExecuteScalar object to a differnt type
+  int intResult = actions.ScalarTo<int>();
+
+  //Get output parameters (if present)
+  var outputList = actions.OutputParameters();
+
+  //Cast the value of output parameters as other type.
+  var outputAsString = actions.OutputParametersAs<string>();
+
+  //Get return parameter (if present)
+  var returnValue = actions.ReturnParameter();
+  
+  //Cast the value of the return parameter as other type.
+  var returnValueAsInt = actions.ReturnParameterAs<int>();
+ 
+  //ExecuteNonQuery
+  int affectedRows = actions.Execute(); 
+  
+```
 
