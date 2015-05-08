@@ -53,17 +53,25 @@ Getting a list of "User" objects:
 
 If the public property name and the column name in the result dataset match the data will be mapped but you can also use the ```[MapTo(“column name”)]``` property to customize the property names of your model.
 
-To map a single record user:
+To map a single record:
 ```csharp
 var user = man.With(new Query("SELECT * FROM tbl_Sample WHERE ID = 1")).Get<User>();
 ```
 
-Retrieving data by using the SqlReader object:
+Retrieve data by using the SqlReader object:
 ```csharp
 var action = man.With(new Query("SELECT FirstName, LastName FROM tbl_Sample"));
-            action.ReadInto(r =>
-            {
+
+ action.ReadInto(r =>  {
                 Console.WriteLine("{0} {1}",r["FirstName"],r["LastName"]);
-            });
+        });
 ```
+Retrieve data by using the SqlReader object and map it to a model:
+```csharp
+  man.With(new Query("SELECT FirstName, LastName FROM tbl_Sample"))
+         .ReadInto<User>(u => {
+            Console.WriteLine("{0} {1}",u.FirstName,u.LastName);
+          });
+```
+
 
