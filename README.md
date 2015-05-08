@@ -74,4 +74,21 @@ Retrieve data by using the SqlReader object and map it to a model:
           });
 ```
 
+Executing a list of commands as a “transaction”:
+```csharp
+ man.Transaction(new List<SqlCommand> {
+           new Query("query 1"),
+           new Query("query 1"),
+           new StoredProcedure("name")
+           {
+             Parameters = { {"@Par","Value"},
+                           { "@Par2","Value"} }
+           } 
+        }, r => {
+            Console.WriteLine($"Row(s) affected {r}");
+        });
+```
+
+>Note: The “Transaction()” method will automatically commit or rollback (if an exception occurred)
+
 
