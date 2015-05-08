@@ -14,23 +14,40 @@ namespace Brief
         {
         }
 
+        /// <summary>
+        /// Manage data retrieval
+        /// </summary>
+        /// <param name="cs">ConnectionString</param>
         public Manager(ConnectionString cs)
         {
             _actions = new ManagerActions(cs);
         }
 
-
+        /// <summary>
+        /// Get actions with a command
+        /// </summary>
+        /// <param name="cmd">Command</param>
+        /// <returns>ManagerActions</returns>
         public ManagerActions With(SqlCommand cmd)
         {
             _actions.With(cmd);
             return _actions;
         }
 
+        /// <summary>
+        /// Execute a list of commands as a transaction
+        /// </summary>
+        /// <param name="commandList">Command list</param>
         public void Transaction(List<SqlCommand> commandList)
         { 
             Transaction(commandList, null);
         }
 
+        /// <summary>
+        /// Execute a list of commands as a transaction
+        /// </summary>
+        /// <param name="commandList">Command list</param>
+        /// <param name="rowsAffected">Action to received rows affected by each command</param>
         public void Transaction(List<SqlCommand> commandList, Action<int> rowsAffected)
         {
             using (var connection =

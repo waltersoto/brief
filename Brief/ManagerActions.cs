@@ -13,8 +13,8 @@ namespace Brief
         private const string SupportDataSet = "system.data.dataset";
         private const string SupportDataRow = "system.data.datarow";
         private const string SupportDataRowCollection = "system.data.datarowcollection";
+        private const string SupportIDataRecord = "system.data.idatarecord";
 
-     
         private SqlConnection _conn;
         private SqlCommand _cmd;
 
@@ -59,11 +59,11 @@ namespace Brief
             
         }
 
-        private static T MapDataRecord<T>(IDataRecord dr, out bool found)
+        private static T MapDataRecord<T>(IDataRecord dr)
         {
             var result = Activator.CreateInstance<T>();
             var ps = result.GetType().GetProperties();
-            found = false;
+         
 
             foreach (var p in ps)
             {
@@ -76,7 +76,7 @@ namespace Brief
                 
                 if(!HasColumn(dr,name)) continue; 
                 if (dr[name] == DBNull.Value) continue;
-                found = true;
+             
                 p.SetValue(result, dr[name], null);
             }
 
@@ -188,12 +188,20 @@ namespace Brief
         {
             var reader = Read(_cmd);
 
+           
             try
             {
                 while (reader.Read())
                 {
-                    bool result;
-                    callback(MapDataRecord<T>(reader, out result));
+                    if (typeof (T).FullName.ToLower() == SupportIDataRecord)
+                    {
+                        callback((T)reader);
+                    }
+                    else
+                    {
+                        callback(MapDataRecord<T>(reader));
+                    }
+
                     if (reader.IsClosed)
                     {
                         break;
@@ -213,24 +221,7 @@ namespace Brief
         /// <param name="callback">Action</param>
         public void ReadInto(Action<IDataRecord> callback)
         {
-            var reader = Read(_cmd);
-
-            try
-            {
-                while (reader.Read())
-                {
-                    callback(reader);
-                    if (reader.IsClosed)
-                    {
-                        break;
-                    }
-                }
-            }
-            finally
-            {
-                reader.Close();
-                reader.Dispose();
-            } 
+           ReadInto<IDataRecord>(callback);
         }
 
         /// <summary>
