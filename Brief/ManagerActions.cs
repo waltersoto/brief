@@ -3,17 +3,23 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 
 namespace Brief
 { 
 
     public class ManagerActions : IDisposable
     {
-        private const string SupportDataTable = "system.data.datatable";
-        private const string SupportDataSet = "system.data.dataset";
-        private const string SupportDataRow = "system.data.datarow";
-        private const string SupportDataRowCollection = "system.data.datarowcollection";
-        private const string SupportIDataRecord = "system.data.idatarecord";
+        private const string SUPPORT_DATA_TABLE = "system.data.datatable";
+        private const string SUPPORT_DATA_SET = "system.data.dataset";
+        private const string SUPPORT_DATA_ROW = "system.data.datarow";
+        private const string SUPPORT_DATA_ROW_COLLECTION = "system.data.datarowcollection";
+        private const string SUPPORT_IDATARECORD = "system.data.idatarecord";
+
+        private const char BACK_SLASH = '\\';
+        private const char FORWARD_SLASH = '/';
+        private const char DBL_QUOTE = '"';
+
 
         private SqlConnection _conn;
         private SqlCommand _cmd;
@@ -35,6 +41,65 @@ namespace Brief
             }
             return false;
         }
+
+
+        private static bool IsNumeric(object val)
+        {
+            if (val == null) return false;
+
+            if (val is int
+                || val is uint
+                || val is float
+                || val is double
+                || val is decimal
+                || val is long
+                || val is ulong
+                || val is sbyte
+                || val is byte
+                || val is short
+                || val is ushort)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string JsonEscape(string s,bool number)
+        { 
+            if (string.IsNullOrEmpty(s))
+            {
+                return "";
+            }
+
+            int i;
+            int len = s.Length;
+            var sb = new StringBuilder(len + 2);
+
+            for (i = 0; i < len; i += 1)
+            {
+                var c = s[i];
+                switch (c)
+                {
+                    case BACK_SLASH:
+                    case DBL_QUOTE:
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+                    case FORWARD_SLASH:
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+
+                    default:
+                        sb.Append(c);
+                        break;
+                }
+            }
+            return number? sb.ToString() : $"'{sb}'";
+        }
+
+
 
         private static T Cast<T>(object obj)
         {
@@ -135,16 +200,16 @@ namespace Brief
 
             switch (support.ToLower())
             {
-                case SupportDataTable: 
+                case SUPPORT_DATA_TABLE: 
                     result = (T)Convert.ChangeType(GetDataTable(_cmd), typeof(T));
                     break;
-                case SupportDataSet: 
+                case SUPPORT_DATA_SET: 
                     result = (T)Convert.ChangeType(GetDataSet(_cmd), typeof(T));
                     break;
-                case SupportDataRow:
+                case SUPPORT_DATA_ROW:
                     result = (T)Convert.ChangeType(GetRow(_cmd), typeof(T));
                     break;
-                case SupportDataRowCollection:
+                case SUPPORT_DATA_ROW_COLLECTION:
                     result = (T)Convert.ChangeType(GetRowCollection(_cmd), typeof(T));
                     break;
                 default:
@@ -155,6 +220,28 @@ namespace Brief
             return result;
         }
 
+        /// <summary>
+        /// Return dataset as a json string
+        /// </summary>
+        /// <returns>Json string</returns>
+        public string JsonString()
+        {
+           
+            var l = new List<string>();
+            ReadInto(d =>
+            {
+                var t = new List<string>();
+                
+                for (var i = 0; i < d.FieldCount; i++)
+                {
+                    t.Add($"{d.GetName(i)}:{JsonEscape(d[i].ToString(),IsNumeric(d[i]))}");
+                } 
+                l.Add($"{{{string.Join(",",t)}}}");
+
+            });
+
+            return $"[{string.Join(string.Concat(",",Environment.NewLine),l)}]";
+        }
     
         /// <summary>
         /// Get list of items from command
@@ -193,7 +280,7 @@ namespace Brief
             {
                 while (reader.Read())
                 {
-                    if (typeof (T).FullName.ToLower() == SupportIDataRecord)
+                    if (typeof (T).FullName.ToLower() == SUPPORT_IDATARECORD)
                     {
                         callback((T)reader);
                     }
