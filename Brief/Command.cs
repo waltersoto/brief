@@ -13,7 +13,7 @@ namespace Brief
 
         public void Dispose()
         {
-            _sqlCommand?.Dispose();
+            sqlCommand?.Dispose();
         }
 
         public Dictionary<string, object> Parameters
@@ -23,24 +23,24 @@ namespace Brief
         }
 
 
-        private SqlCommand _sqlCommand;
+        private SqlCommand sqlCommand;
 
         public SqlCommand SqlCommand
         {
-            set { _sqlCommand = value; }
+            set { sqlCommand = value; }
             get
             {
-                if (_sqlCommand == null) return _sqlCommand;
+                if (sqlCommand == null) return sqlCommand;
 
 
-                if (_sqlCommand.Parameters.Count >= 1 || Parameters.Count <= 0) return _sqlCommand;
+                if (sqlCommand.Parameters.Count >= 1 || Parameters.Count <= 0) return sqlCommand;
 
-                foreach (var p in Parameters)
+                foreach (KeyValuePair<string, object> p in Parameters)
                 {
-                    _sqlCommand.Parameters.Add(new SqlParameter(p.Key, p.Value));
+                    sqlCommand.Parameters.Add(new SqlParameter(p.Key, p.Value));
                 }
 
-                return _sqlCommand;
+                return sqlCommand;
             }
         }
 

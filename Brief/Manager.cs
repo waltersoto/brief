@@ -7,8 +7,8 @@ namespace Brief
 {
     public class Manager : IDisposable
     {
-        private readonly ManagerActions _actions;
-        private bool _disposed;
+        private readonly ManagerActions actions;
+        private bool disposed;
 
         public Manager() : this(AppConnections.Connection.Default)
         {
@@ -20,7 +20,7 @@ namespace Brief
         /// <param name="cs">ConnectionString</param>
         public Manager(ConnectionString cs)
         {
-            _actions = new ManagerActions(cs);
+            actions = new ManagerActions(cs);
         }
 
         /// <summary>
@@ -30,8 +30,8 @@ namespace Brief
         /// <returns>ManagerActions</returns>
         public ManagerActions With(SqlCommand cmd)
         {
-            _actions.With(cmd);
-            return _actions;
+            actions.With(cmd);
+            return actions;
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Brief
         public void Transaction(List<SqlCommand> commandList, Action<int> rowsAffected)
         {
             using (var connection =
-                new SqlConnection(_actions.ConnectionString.ConnectionString))
+                new SqlConnection(actions.ConnectionString.ConnectionString))
             {
                 SqlTransaction transaction = null;
 
@@ -61,11 +61,11 @@ namespace Brief
 
                     transaction = connection.BeginTransaction();
 
-                    foreach (var cmd in commandList.Where(cmd => cmd != null))
+                    foreach (SqlCommand cmd in commandList.Where(cmd => cmd != null))
                     {
                         cmd.Connection = connection;
                         cmd.Transaction = transaction;
-                        var r = cmd.ExecuteNonQuery();
+                        int r = cmd.ExecuteNonQuery();
                         cmd.Dispose();
                        
                         rowsAffected?.Invoke(r);
@@ -96,16 +96,16 @@ namespace Brief
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (disposed) return;
             if (disposing)
             {
-                _actions.Dispose();
+                actions.Dispose();
 
 #if DEBUG
                 Console.WriteLine("Closing connection...");
 #endif
             }
-            _disposed = true;
+            disposed = true;
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 using System.Data;
 using System.Data.SqlClient;
 
@@ -7,7 +7,7 @@ namespace Brief
     public class Query : Command
     {
 
-        private int _timeOut = -1;
+        private int timeOut = -1;
         public Query() { }
 
         public Query(string queryTxt)
@@ -20,9 +20,9 @@ namespace Brief
             set
             {
                 SqlCommand = new SqlCommand(value) { CommandType = CommandType.Text };
-                if (_timeOut > 0)
+                if (timeOut > 0)
                 {
-                    SqlCommand.CommandTimeout = _timeOut;
+                    SqlCommand.CommandTimeout = timeOut;
                 }
             }
         }
@@ -38,7 +38,7 @@ namespace Brief
                 }
                 else
                 {
-                    _timeOut = value;
+                    timeOut = value;
                 }
             }
         }

@@ -8,7 +8,7 @@ namespace Brief
     public class StoredProcedure : Command
     {
 
-        private int _timeOut = -1;
+        private int timeOut = -1;
         public StoredProcedure() { }
 
         public StoredProcedure(string name)
@@ -21,9 +21,9 @@ namespace Brief
             set
             {
                 SqlCommand = new SqlCommand(value) { CommandType = CommandType.StoredProcedure};
-                if (_timeOut > 0)
+                if (timeOut > 0)
                 {
-                    SqlCommand.CommandTimeout = _timeOut;
+                    SqlCommand.CommandTimeout = timeOut;
                 }
             }
         }
@@ -39,7 +39,7 @@ namespace Brief
                 }
                 else
                 {
-                    _timeOut = value;
+                    timeOut = value;
                 }
             }
         }

@@ -5,23 +5,23 @@ namespace Brief
 {
     public class AppConnections : IEnumerable
     {
-        private static volatile AppConnections _instance;
+        private static volatile AppConnections instance;
         private static readonly object SyncRoot = new object();
 
         private AppConnections()
         {
-            _connections = new Dictionary<string, ConnectionString>();
+            connections = new Dictionary<string, ConnectionString>();
         }
 
-        private Dictionary<string, ConnectionString> _connections;
+        private Dictionary<string, ConnectionString> connections;
 
         public ConnectionString Default
         {
             get
             {
-                if (_connections.Count > 0)
+                if (connections.Count > 0)
                 {
-                    return _connections.FirstOrDefault().Value;
+                    return connections.FirstOrDefault().Value;
                 }
 
                 return new ConnectionString();
@@ -30,50 +30,49 @@ namespace Brief
 
         public bool Contains(string key)
         {
-            return _connections.ContainsKey(key);
+            return connections.ContainsKey(key);
         }
 
-        public bool IsEmpty => _connections.Count == 0;
+        public bool IsEmpty => connections.Count == 0;
 
         public ConnectionString this[string key]
         {
             set
             {
-
-                if (_connections.ContainsKey(key))
+                if (connections.ContainsKey(key))
                 {
-                    _connections[key] = value;
+                    connections[key] = value;
                 }
                 else
                 {
-                    _connections.Add(key, value);
+                    connections.Add(key, value);
                 }
             }
 
             get
             {
-                return _connections.ContainsKey(key) ? _connections[key] : new ConnectionString();
+                return connections.ContainsKey(key) ? connections[key] : new ConnectionString();
             }
         }
         public void Reset()
         {
-            _connections = new Dictionary<string, ConnectionString>();
+            connections = new Dictionary<string, ConnectionString>();
         }
 
         public static AppConnections Connection
         {
             get
             {
-                if (_instance != null) return _instance;
+                if (instance != null) return instance;
                 lock (SyncRoot)
                 {
-                    if (_instance == null)
+                    if (instance == null)
                     {
-                        _instance = new AppConnections();
+                        instance = new AppConnections();
                     }
                 }
 
-                return _instance;
+                return instance;
             }
         }
 
@@ -88,7 +87,7 @@ namespace Brief
 
         public IEnumerator GetEnumerator()
         {
-            return (_connections.Values as IEnumerable).GetEnumerator();
+            return (connections.Values as IEnumerable).GetEnumerator();
         }
 
 
