@@ -8,6 +8,7 @@ namespace Brief
     {
 
         private int timeOut = -1;
+
         public Query() { }
 
         public Query(string queryTxt)

@@ -244,7 +244,7 @@ namespace Brief
         /// </summary>
         /// <typeparam name="T">Model Type</typeparam>
         /// <returns>T</returns>
-        public List<T> GetListOf<T>()
+        public IEnumerable<T> GetListOf<T>()
         { 
             return MapToList<T>(cmd);
         }
@@ -310,7 +310,7 @@ namespace Brief
         /// Get a list of output parameters 
         /// </summary>
         /// <returns></returns>
-        public List<SqlParameter> OutputParameters()
+        public IEnumerable<SqlParameter> OutputParameters()
         { 
             return SelectParamaters(cmd,
                 x =>
@@ -323,7 +323,7 @@ namespace Brief
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>Parameters</returns>
-        public List<T> OutputParametersAs<T>()
+        public IEnumerable<T> OutputParametersAs<T>()
         {
             return SelectParamaters(cmd, 
                 x =>
@@ -415,7 +415,7 @@ namespace Brief
 
         }
 
-        private List<SqlParameter> SelectParamaters(SqlCommand command,Func<SqlParameter,bool> where)
+        private IEnumerable<SqlParameter> SelectParamaters(SqlCommand command,Func<SqlParameter,bool> where)
         {
             var l = new List<SqlParameter>();
             try
@@ -449,7 +449,7 @@ namespace Brief
 
         }
 
-        private List<T> MapToList<T>(SqlCommand command)
+        private IEnumerable<T> MapToList<T>(SqlCommand command)
         {
             var l = new List<T>();
 

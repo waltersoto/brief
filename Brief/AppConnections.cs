@@ -15,18 +15,9 @@ namespace Brief
 
         private Dictionary<string, ConnectionString> connections;
 
-        public ConnectionString Default
-        {
-            get
-            {
-                if (connections.Count > 0)
-                {
-                    return connections.FirstOrDefault().Value;
-                }
-
-                return new ConnectionString();
-            }
-        }
+        public ConnectionString Default => connections.Count > 0 ? 
+                                           connections.FirstOrDefault().Value : 
+                                           new ConnectionString();
 
         public bool Contains(string key)
         {

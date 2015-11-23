@@ -38,7 +38,7 @@ namespace Brief
         /// Execute a list of commands as a transaction
         /// </summary>
         /// <param name="commandList">Command list</param>
-        public void Transaction(List<SqlCommand> commandList)
+        public void Transaction(IEnumerable<SqlCommand> commandList)
         { 
             Transaction(commandList, null);
         }
@@ -48,7 +48,7 @@ namespace Brief
         /// </summary>
         /// <param name="commandList">Command list</param>
         /// <param name="rowsAffected">Action to received rows affected by each command</param>
-        public void Transaction(List<SqlCommand> commandList, Action<int> rowsAffected)
+        public void Transaction(IEnumerable<SqlCommand> commandList, Action<int> rowsAffected)
         {
             using (var connection =
                 new SqlConnection(actions.ConnectionString.ConnectionString))
