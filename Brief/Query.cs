@@ -2,43 +2,32 @@
 using System.Data;
 using System.Data.SqlClient;
 
-namespace Brief
-{
-    public class Query : Command
-    {
+namespace Brief {
+    public class Query : Command {
 
         private int timeOut = -1;
 
         public Query() { }
 
-        public Query(string queryTxt)
-        {
+        public Query(string queryTxt) {
             SqlCommand = new SqlCommand(queryTxt) { CommandType = CommandType.Text };
         }
 
-        public string Text
-        {
-            set
-            {
+        public string Text {
+            set {
                 SqlCommand = new SqlCommand(value) { CommandType = CommandType.Text };
-                if (timeOut > 0)
-                {
+                if (timeOut > 0) {
                     SqlCommand.CommandTimeout = timeOut;
                 }
             }
         }
 
-        public int TimeOut
-        {
-            set
-            {
-                if (SqlCommand != null)
-                {
+        public int TimeOut {
+            set {
+                if (SqlCommand != null) {
 
                     SqlCommand.CommandTimeout = value;
-                }
-                else
-                {
+                } else {
                     timeOut = value;
                 }
             }

@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 using System.Text;
+using Brief.Interfaces;
 
-namespace Brief
-{ 
+namespace Brief {
 
-    public class ManagerActions : IDisposable
-    {
+    public class ManagerActions : IManagerActions, IDisposable {
+
         private const string SUPPORT_DATA_TABLE = "system.data.datatable";
         private const string SUPPORT_DATA_SET = "system.data.dataset";
         private const string SUPPORT_DATA_ROW = "system.data.datarow";
@@ -20,32 +19,23 @@ namespace Brief
         private const char BACK_SLASH = '\\';
         private const char FORWARD_SLASH = '/';
         private const char DBL_QUOTE = '"';
-
-
         private SqlConnection conn;
-        private SqlCommand cmd;
 
-       
-        internal ManagerActions(ConnectionString cs)
-        {
+        internal ManagerActions(ConnectionString cs) {
             ConnectionString = cs;
         }
 
-        private static bool HasColumn(IDataRecord r, string name)
-        {
-            for (var i = 0; i < r.FieldCount; i++)
-            {
-                if (r.GetName(i).Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                {
+        private static bool HasColumn(IDataRecord r, string name) {
+            for (var i = 0; i < r.FieldCount; i++) {
+                if (r.GetName(i).Equals(name, StringComparison.InvariantCultureIgnoreCase)) {
                     return true;
-                }    
+                }
             }
             return false;
         }
 
 
-        private static bool IsNumeric(object val)
-        {
+        private static bool IsNumeric(object val) {
             if (val == null) return false;
 
             return val is int
@@ -61,22 +51,18 @@ namespace Brief
                    || val is ushort;
         }
 
-        private static string JsonEscape(string s,bool number)
-        { 
-            if (string.IsNullOrEmpty(s))
-            {
+        private static string JsonEscape(string s, bool number) {
+            if (string.IsNullOrEmpty(s)) {
                 return "";
             }
 
             int i;
-            int len = s.Length;
+            var len = s.Length;
             var sb = new StringBuilder(len + 2);
 
-            for (i = 0; i < len; i += 1)
-            {
-                char c = s[i];
-                switch (c)
-                {
+            for (i = 0; i < len; i += 1) {
+                var c = s[i];
+                switch (c) {
                     case BACK_SLASH:
                     case DBL_QUOTE:
                         sb.Append('\\');
@@ -92,70 +78,57 @@ namespace Brief
                         break;
                 }
             }
-            return number? sb.ToString() : $"'{sb}'";
+            return number ? sb.ToString() : $"'{sb}'";
         }
 
+        private static T Cast<T>(object obj) {
 
-
-        private static T Cast<T>(object obj)
-        {
-
-            if (obj == null || obj == DBNull.Value)
-            {
+            if (obj == null || obj == DBNull.Value) {
                 return default(T);
             }
-           
+
             T result;
 
-            try
-            {
+            try {
                 result = (T)Convert.ChangeType(obj, typeof(T));
-            }
-            catch (FormatException)
-            {
+            } catch (FormatException) {
                 result = default(T);
             }
 
             return result;
-            
+
         }
 
-        private static T MapDataRecord<T>(IDataRecord dr)
-        {
+        private static T MapDataRecord<T>(IDataRecord dr) {
             var result = Activator.CreateInstance<T>();
-            PropertyInfo[] ps = result.GetType().GetProperties();
-         
+            var ps = result.GetType().GetProperties();
 
-            foreach (PropertyInfo p in ps)
-            {
+
+            foreach (var p in ps) {
                 var m = (MapTo[])p.GetCustomAttributes(typeof(MapTo), false);
-                string name = p.Name;
-                if (m.Length > 0)
-                {
+                var name = p.Name;
+                if (m.Length > 0) {
                     name = m[0].MapColumn;
                 }
-                
-                if(!HasColumn(dr,name)) continue; 
+
+                if (!HasColumn(dr, name)) continue;
                 if (dr[name] == DBNull.Value) continue;
-             
+
                 p.SetValue(result, dr[name], null);
             }
 
             return result;
         }
 
-        private static T Map<T>(DataRow dr, out bool found)
-        {
+        private static T Map<T>(DataRow dr, out bool found) {
             var result = Activator.CreateInstance<T>();
-            PropertyInfo[] ps = result.GetType().GetProperties();
+            var ps = result.GetType().GetProperties();
             found = false;
 
-            foreach (PropertyInfo p in ps)
-            {
+            foreach (var p in ps) {
                 var m = (MapTo[])p.GetCustomAttributes(typeof(MapTo), false);
-                string name = p.Name;
-                if (m.Length > 0)
-                {
+                var name = p.Name;
+                if (m.Length > 0) {
                     name = m[0].MapColumn;
                 }
 
@@ -169,16 +142,6 @@ namespace Brief
         }
 
         /// <summary>
-        /// Command to execute
-        /// </summary>
-        /// <param name="command">Command</param>
-        internal void With(SqlCommand command)
-        {
-            if (command == null) throw new ArgumentNullException(nameof(command));
-            cmd = command;
-        }
-         
-        /// <summary>
         /// Get a set of data
         /// </summary>
         /// <typeparam name="T">Set Type</typeparam>
@@ -188,28 +151,26 @@ namespace Brief
         /// DataRowCollection, Data Model (a class with public properties)
         /// </remarks>
         /// <returns>T</returns>
-        public T Get<T>()
-        {
+        public T Get<T>() {
             T result;
 
-            string support = typeof (T).FullName;
+            var support = typeof(T).FullName;
 
-            switch (support.ToLower())
-            {
-                case SUPPORT_DATA_TABLE: 
-                    result = (T)Convert.ChangeType(GetDataTable(cmd), typeof(T));
+            switch (support.ToLower()) {
+                case SUPPORT_DATA_TABLE:
+                    result = (T)Convert.ChangeType(GetDataTable(Command), typeof(T));
                     break;
-                case SUPPORT_DATA_SET: 
-                    result = (T)Convert.ChangeType(GetDataSet(cmd), typeof(T));
+                case SUPPORT_DATA_SET:
+                    result = (T)Convert.ChangeType(GetDataSet(Command), typeof(T));
                     break;
                 case SUPPORT_DATA_ROW:
-                    result = (T)Convert.ChangeType(GetRow(cmd), typeof(T));
+                    result = (T)Convert.ChangeType(GetRow(Command), typeof(T));
                     break;
                 case SUPPORT_DATA_ROW_COLLECTION:
-                    result = (T)Convert.ChangeType(GetRowCollection(cmd), typeof(T));
+                    result = (T)Convert.ChangeType(GetRowCollection(Command), typeof(T));
                     break;
                 default:
-                    result = (T)Convert.ChangeType(MapTo<T>(cmd), typeof(T));
+                    result = (T)Convert.ChangeType(MapTo<T>(Command), typeof(T));
                     break;
             }
 
@@ -220,78 +181,68 @@ namespace Brief
         /// Return dataset as a json string
         /// </summary>
         /// <returns>Json string</returns>
-        public string JsonString()
-        {
-           
+        public string JsonString() {
+
             var l = new List<string>();
-            ReadInto(d =>
-            {
+            ReadInto(d => {
                 var t = new List<string>();
-                
-                for (var i = 0; i < d.FieldCount; i++)
-                {
-                    t.Add($"{d.GetName(i)}:{JsonEscape(d[i].ToString(),IsNumeric(d[i]))}");
-                } 
-                l.Add($"{{{string.Join(",",t)}}}");
+
+                for (var i = 0; i < d.FieldCount; i++) {
+                    t.Add($"{d.GetName(i)}:{JsonEscape(d[i].ToString(), IsNumeric(d[i]))}");
+                }
+                l.Add($"{{{string.Join(",", t)}}}");
 
             });
 
-            return $"[{string.Join(string.Concat(",",Environment.NewLine),l)}]";
+            return $"[{string.Join(string.Concat(",", Environment.NewLine), l)}]";
         }
-    
+
         /// <summary>
         /// Get list of items from command
         /// </summary>
         /// <typeparam name="T">Model Type</typeparam>
         /// <returns>T</returns>
-        public IEnumerable<T> GetListOf<T>()
-        { 
-            return MapToList<T>(cmd);
+        public IEnumerable<T> GetListOf<T>() {
+            return MapToList<T>(Command);
         }
 
         /// <summary>
         /// Execute non query
         /// </summary>
         /// <returns>Number of affected rows</returns>
-        public int Execute()
-        {
-            return ExecuteNonQuery(cmd);
+        public int Execute() {
+            return ExecuteNonQuery(Command);
         }
 
         /// <summary>
         /// Get a reader
         /// </summary>
         /// <returns>IDataReader</returns>
-        public IDataReader Reader()
-        {
-            return Read(cmd);
+        public IDataReader Reader() {
+            return Read(Command);
         }
 
-        public void ReadInto<T>(Action<T> callback)
-        {
-            IDataReader reader = Read(cmd);
-            
-            try
-            {
-                while (reader.Read())
-                {
-                    if (typeof (T).FullName.ToLower() == SUPPORT_IDATARECORD)
-                    {
+        /// <summary>
+        /// Execute a reader into callback action and cast each item to T.
+        /// </summary>
+        /// <typeparam name="T">DataType</typeparam>
+        /// <param name="callback">Callback</param>
+        public void ReadInto<T>(Action<T> callback) {
+            var reader = Read(Command);
+
+            try {
+                while (reader.Read()) {
+                    if (typeof(T).FullName.ToLower() == SUPPORT_IDATARECORD) {
                         callback((T)reader);
-                    }
-                    else
-                    {
+                    } else {
                         callback(MapDataRecord<T>(reader));
                     }
 
-                    if (reader.IsClosed)
-                    {
+                    if (reader.IsClosed) {
                         break;
                     }
                 }
-            }
-            finally
-            {
+            } finally {
                 reader.Close();
                 reader.Dispose();
             }
@@ -301,20 +252,18 @@ namespace Brief
         /// Execute a reader into a callback action
         /// </summary>
         /// <param name="callback">Action</param>
-        public void ReadInto(Action<IDataRecord> callback)
-        {
-           ReadInto<IDataRecord>(callback);
+        public void ReadInto(Action<IDataRecord> callback) {
+            ReadInto<IDataRecord>(callback);
         }
 
         /// <summary>
         /// Get a list of output parameters 
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<SqlParameter> OutputParameters()
-        { 
-            return SelectParamaters(cmd,
+        public IEnumerable<SqlParameter> OutputParameters() {
+            return SelectParamaters(Command,
                 x =>
-                    x.Direction == ParameterDirection.Output || 
+                    x.Direction == ParameterDirection.Output ||
                     x.Direction == ParameterDirection.InputOutput);
         }
 
@@ -323,11 +272,10 @@ namespace Brief
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>Parameters</returns>
-        public IEnumerable<T> OutputParametersAs<T>()
-        {
-            return SelectParamaters(cmd, 
+        public IEnumerable<T> OutputParametersAs<T>() {
+            return SelectParamaters(Command,
                 x =>
-                    x.Direction == ParameterDirection.Output || 
+                    x.Direction == ParameterDirection.Output ||
                     x.Direction == ParameterDirection.InputOutput).Select(Cast<T>).ToList();
         }
 
@@ -335,9 +283,8 @@ namespace Brief
         /// Get a list of return parameters
         /// </summary>
         /// <returns>Parameters</returns>
-        public SqlParameter ReturnParameter()
-        {
-            return SelectParamaters(cmd,
+        public SqlParameter ReturnParameter() {
+            return SelectParamaters(Command,
                 x => x.Direction == ParameterDirection.ReturnValue).FirstOrDefault();
         }
 
@@ -346,9 +293,8 @@ namespace Brief
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>Parameters</returns>
-        public T ReturnParameterAs<T>()
-        {
-            return SelectParamaters(cmd, 
+        public T ReturnParameterAs<T>() {
+            return SelectParamaters(Command,
                 x => x.Direction == ParameterDirection.ReturnValue).Select(Cast<T>).FirstOrDefault();
         }
 
@@ -357,57 +303,48 @@ namespace Brief
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>T</returns>
-        public T ScalarTo<T>()
-        { 
-            object obj = ExecuteScalar(cmd);
-            if (obj == null || obj == DBNull.Value)
-            {
+        public T ScalarTo<T>() {
+            var obj = ExecuteScalar(Command);
+            if (obj == null || obj == DBNull.Value) {
                 return default(T);
             }
-           
-            return (T)Convert.ChangeType(obj, typeof(T)); 
+
+            return (T)Convert.ChangeType(obj, typeof(T));
         }
 
         /// <summary>
         /// Execute scalar
         /// </summary>
         /// <returns></returns>
-        public object Scalar()
-        {
-            return ExecuteScalar(cmd);
+        public object Scalar() {
+            return ExecuteScalar(Command);
         }
 
-        private void Connect()
-        {
-            if (conn == null)
-            {
+        private void Connect() {
+            if (conn == null) {
                 conn = new SqlConnection(ConnectionString.ConnectionString);
             }
 
             if (conn.State == ConnectionState.Open) return;
 
             conn.Open();
-            
-            #if DEBUG
-               Console.WriteLine("Opening connection...");
-            #endif
+
+#if DEBUG
+            Console.WriteLine("Opening connection...");
+#endif
         }
 
         #region "Commands"
 
-        private IDataReader Read(SqlCommand command)
-        {
+        private IDataReader Read(SqlCommand command) {
             IDataReader reader;
 
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
-               reader = command.ExecuteReader();
-                
-            }
-            finally
-            {
+                reader = command.ExecuteReader();
+
+            } finally {
                 command.Dispose();
             }
 
@@ -415,30 +352,25 @@ namespace Brief
 
         }
 
-        private IEnumerable<SqlParameter> SelectParamaters(SqlCommand command,Func<SqlParameter,bool> where)
-        {
+        private IEnumerable<SqlParameter> SelectParamaters(SqlCommand command, Func<SqlParameter, bool> where) {
             var l = new List<SqlParameter>();
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
                 command.ExecuteNonQuery();
 
                 l.AddRange(command.Parameters.Cast<SqlParameter>().Where(where));
-            }
-            finally
-            {
+            } finally {
                 command.Dispose();
             }
 
             return l;
-        } 
+        }
 
-        private T MapTo<T>(SqlCommand command)
-        {
-            T o = default(T);
-            
-            DataRow dr = GetRow(command);
+        private T MapTo<T>(SqlCommand command) {
+            var o = default(T);
+
+            var dr = GetRow(command);
 
             if (dr == null) return o;
 
@@ -449,65 +381,47 @@ namespace Brief
 
         }
 
-        private IEnumerable<T> MapToList<T>(SqlCommand command)
-        {
+        private IEnumerable<T> MapToList<T>(SqlCommand command) {
             var l = new List<T>();
 
-            DataRowCollection rows = GetRowCollection(command);
-            
-            foreach (DataRow dr in rows)
-            {
-                if (typeof(T).IsValueType || typeof(T) == typeof(string))
-                {
-                    if (dr.ItemArray.Any())
-                    {
+            var rows = GetRowCollection(command);
+
+            foreach (DataRow dr in rows) {
+                if (typeof(T).IsValueType || typeof(T) == typeof(string)) {
+                    if (dr.ItemArray.Any()) {
                         l.Add(Cast<T>(dr[0]));
                     }
-                }
-                else
-                {
+                } else {
                     bool found;
                     var o = Map<T>(dr, out found);
-
-                    if (found)
-                    {
+                    if (found) {
                         l.Add(o);
                     }
-
                 }
-
-
             }
-             
 
             return l;
 
         }
 
-        private DataRowCollection GetRowCollection(SqlCommand command)
-        {
+        private DataRowCollection GetRowCollection(SqlCommand command) {
             return GetDataTable(command).Rows;
         }
 
-        private DataRow GetRow(SqlCommand command)
-        {
-            DataTable dt = GetDataTable(command);
+        private DataRow GetRow(SqlCommand command) {
+            var dt = GetDataTable(command);
             return dt?.Rows.Count > 0 ? dt.Rows[0] : null;
         }
 
-        private DataTable GetDataTable(SqlCommand command)
-        {
+        private DataTable GetDataTable(SqlCommand command) {
             var adapter = new SqlDataAdapter();
             var dt = new DataTable();
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
                 adapter = new SqlDataAdapter(command);
                 adapter.Fill(dt);
-            } 
-            finally
-            {
+            } finally {
                 adapter.Dispose();
                 command.Dispose();
             }
@@ -515,57 +429,45 @@ namespace Brief
             return dt;
         }
 
-        private DataSet GetDataSet(SqlCommand command)
-        {
-             
+        private DataSet GetDataSet(SqlCommand command) {
+
             var adapter = new SqlDataAdapter();
             var ds = new DataSet();
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
                 adapter = new SqlDataAdapter(command);
                 adapter.Fill(ds);
-            }
-            finally
-            {
+            } finally {
                 adapter.Dispose();
                 command.Dispose();
-            } 
+            }
             return ds;
 
         }
 
-        private object ExecuteScalar(SqlCommand command)
-        {
+        private object ExecuteScalar(SqlCommand command) {
             object result;
 
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
                 result = command.ExecuteScalar();
-            } 
-            finally
-            {
-                command.Dispose(); 
+            } finally {
+                command.Dispose();
             }
 
             return result;
         }
 
-        private int ExecuteNonQuery(SqlCommand command)
-        {
+        private int ExecuteNonQuery(SqlCommand command) {
             int result;
 
-            try
-            {
+            try {
                 Connect();
                 command.Connection = conn;
                 result = command.ExecuteNonQuery();
-            }
-            finally
-            {
+            } finally {
                 command.Dispose();
             }
 
@@ -576,26 +478,22 @@ namespace Brief
 
 
         #region "Dispose"
-        public void Dispose()
-        {
+        public void Dispose() {
             Dispose(true);
         }
 
         private bool disposed;
-         
-        protected virtual void Dispose(bool disposing)
-        {
-            #if DEBUG
-              Console.WriteLine("Closing actions...");
-            #endif
+
+        protected virtual void Dispose(bool disposing) {
+#if DEBUG
+            Console.WriteLine("Closing actions...");
+#endif
             if (disposed) return;
-            if (disposing)
-            {
-                if (conn != null)
-                {
+            if (disposing) {
+                if (conn != null) {
                     conn.Close();
                     conn.Dispose();
-         
+
                 }
             }
             disposed = true;
@@ -604,6 +502,7 @@ namespace Brief
         #endregion
 
         public ConnectionString ConnectionString { set; get; }
+        public SqlCommand Command { get; internal set; }
 
     }
 }

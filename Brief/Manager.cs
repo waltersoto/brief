@@ -2,24 +2,21 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using Brief.Interfaces;
 
-namespace Brief
-{
-    public class Manager : IDisposable
-    {
+namespace Brief {
+    public class Manager : IManager, IDisposable {
         private readonly ManagerActions actions;
         private bool disposed;
 
-        public Manager() : this(AppConnections.Connection.Default)
-        {
+        public Manager() : this(AppConnections.Connection.Default) {
         }
 
         /// <summary>
         /// Manage data retrieval
         /// </summary>
-        /// <param name="cs">ConnectionString</param>
-        public Manager(ConnectionString cs)
-        {
+        /// <param name="cs">ConnectionString</param> 
+        public Manager(ConnectionString cs) {
             actions = new ManagerActions(cs);
         }
 
@@ -28,9 +25,8 @@ namespace Brief
         /// </summary>
         /// <param name="cmd">Command</param>
         /// <returns>ManagerActions</returns>
-        public ManagerActions With(SqlCommand cmd)
-        {
-            actions.With(cmd);
+        public IManagerActions With(SqlCommand cmd) {
+            actions.Command = cmd;
             return actions;
         }
 
@@ -38,8 +34,7 @@ namespace Brief
         /// Execute a list of commands as a transaction
         /// </summary>
         /// <param name="commandList">Command list</param>
-        public void Transaction(IEnumerable<SqlCommand> commandList)
-        { 
+        public void Transaction(IEnumerable<SqlCommand> commandList) {
             Transaction(commandList, null);
         }
 
@@ -48,57 +43,44 @@ namespace Brief
         /// </summary>
         /// <param name="commandList">Command list</param>
         /// <param name="rowsAffected">Action to received rows affected by each command</param>
-        public void Transaction(IEnumerable<SqlCommand> commandList, Action<int> rowsAffected)
-        {
+        public void Transaction(IEnumerable<SqlCommand> commandList, Action<int> rowsAffected) {
             using (var connection =
-                new SqlConnection(actions.ConnectionString.ConnectionString))
-            {
+                new SqlConnection(actions.ConnectionString.ConnectionString)) {
                 SqlTransaction transaction = null;
 
-                try
-                {
+                try {
                     connection.Open();
 
                     transaction = connection.BeginTransaction();
 
-                    foreach (SqlCommand cmd in commandList.Where(cmd => cmd != null))
-                    {
+                    foreach (var cmd in commandList.Where(cmd => cmd != null)) {
                         cmd.Connection = connection;
                         cmd.Transaction = transaction;
-                        int r = cmd.ExecuteNonQuery();
+                        var r = cmd.ExecuteNonQuery();
                         cmd.Dispose();
-                       
+
                         rowsAffected?.Invoke(r);
                     }
-
-
                     transaction.Commit();
-                }
-                catch
-                {
+                } catch {
                     transaction?.Rollback();
                     throw;
-                }
-                finally
-                {
+                } finally {
                     connection.Close();
                 }
             }
- 
+
         }
 
         #region "Dispose"
 
-        public void Dispose()
-        {
+        public void Dispose() {
             Dispose(true);
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
+        protected virtual void Dispose(bool disposing) {
             if (disposed) return;
-            if (disposing)
-            {
+            if (disposing) {
                 actions.Dispose();
 
 #if DEBUG

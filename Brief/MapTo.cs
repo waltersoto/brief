@@ -1,12 +1,9 @@
-﻿using System; 
+﻿using System;
 
-namespace Brief
-{
-    public class MapTo : Attribute
-    {
+namespace Brief {
+    public class MapTo : Attribute {
 
-        public MapTo(string column)
-        {
+        public MapTo(string column) {
             MapColumn = column;
         }
 

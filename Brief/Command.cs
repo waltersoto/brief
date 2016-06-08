@@ -1,42 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient; 
+using System.Data.SqlClient;
+using Brief.Interfaces;
 
-namespace Brief
-{
-    public abstract class Command : IDisposable
-    {
-        protected Command()
-        {
+namespace Brief {
+    public abstract class Command : ICommand, IDisposable {
+
+        protected Command() {
             Parameters = new Dictionary<string, object>();
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             sqlCommand?.Dispose();
         }
 
-        public Dictionary<string, object> Parameters
-        {
+        public Dictionary<string, object> Parameters {
             set;
             get;
         }
 
-
         private SqlCommand sqlCommand;
 
-        public SqlCommand SqlCommand
-        {
+        public SqlCommand SqlCommand {
             set { sqlCommand = value; }
-            get
-            {
+            get {
                 if (sqlCommand == null) return sqlCommand;
 
 
                 if (sqlCommand.Parameters.Count >= 1 || Parameters.Count <= 0) return sqlCommand;
 
-                foreach (KeyValuePair<string, object> p in Parameters)
-                {
+                foreach (var p in Parameters) {
                     sqlCommand.Parameters.Add(new SqlParameter(p.Key, p.Value));
                 }
 
@@ -46,8 +39,7 @@ namespace Brief
 
         #region "Implicit casting to SqlCommand"
 
-        public static implicit operator SqlCommand(Command self)
-        { 
+        public static implicit operator SqlCommand(Command self) {
             return self.SqlCommand;
         }
 

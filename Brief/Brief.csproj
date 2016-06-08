@@ -41,6 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\ICommand.cs" />
+    <Compile Include="Interfaces\IManager.cs" />
+    <Compile Include="Interfaces\IManagerActions.cs" />
     <Compile Include="ManagerActions.cs" />
     <Compile Include="AppConnections.cs" />
     <Compile Include="Command.cs" />
